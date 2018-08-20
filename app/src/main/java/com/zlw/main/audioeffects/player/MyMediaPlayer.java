@@ -2,15 +2,12 @@ package com.zlw.main.audioeffects.player;
 
 import android.media.MediaPlayer;
 import android.media.audiofx.Equalizer;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 
 import com.zlw.main.audioeffects.base.MyApp;
 import com.zlw.main.audioeffects.utils.Logger;
-
-import java.io.File;
 
 /**
  * @author zhaolewei on 2018/7/26.

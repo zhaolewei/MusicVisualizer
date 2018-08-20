@@ -67,6 +67,26 @@ public class AudioVisualConverter {
         return newData;
     }
 
+
+    /**
+     * 处理音频数据
+     *
+     * @param data
+     * @return
+     */
+    public byte[] converterFft(byte[] data) {
+        byte[] newData = new byte[data.length];
+        byte[] readyData = readyFftDataByte(data);
+        //去高音
+        for (int i = 0; i < readyData.length / 2; i++) {
+            newData[i * 2] = readyData[i];
+            if (i != readyData.length / 2 - 1) {
+                newData[i * 2 + 1] = (byte) (newData[i * 2] * Math.random());
+            }
+        }
+        return newData;
+    }
+
     /**
      * 预处理数据
      *
@@ -80,6 +100,49 @@ public class AudioVisualConverter {
         return newData;
     }
 
+    /**
+     * 预处理数据
+     *
+     * @return
+     */
+    public int[] getVoiceSizes(byte[] data) {
+        byte[] newData = readyFftDataByte(data);
+        int[] voices = new int[newData.length / 8];
+        for (int i = 0; i < voices.length; i++) {
+            int maxValue = 0;
+            for (int j = i * 8; j < i * 8 + 8; j++) {
+                if (newData[j] > maxValue) {
+                    maxValue = newData[j];
+                }
+            }
+            voices[i] = maxValue;
+        }
+        return voices;
+    }
+
+
+    /**
+     * 预处理数据
+     *
+     * @return
+     */
+    public int getVoiceSize(byte[] data) {
+        byte[] newData = readyFftDataByte(data);
+        int[] voices = getVoiceSizes(newData);
+
+        int sum = 0;
+        for (int i = 0; i < 3; i++) {
+            if (i == 0) {
+                sum += voices[i];
+            } else if (i == 1) {
+                sum += voices[i];
+            } else if (i == 2) {
+                sum += voices[i];
+            }
+        }
+
+        return sum / 3;
+    }
 
     /**
      * 提取有效数据
