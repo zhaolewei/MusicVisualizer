@@ -62,6 +62,11 @@ public class PcmChunkPlayer {
         pcmChunkPlayerThread.isOver = true;
     }
 
+    private EncordFinishListener encordFinishListener;
+
+    public void setEncordFinishListener(EncordFinishListener encordFinishListener) {
+        this.encordFinishListener = encordFinishListener;
+    }
     /**
      * PCM数据调度器
      */
@@ -71,7 +76,6 @@ public class PcmChunkPlayer {
          * PCM 缓冲数据
          */
         private List<ChangeBuffer> cacheBufferList = Collections.synchronizedList(new LinkedList<ChangeBuffer>());
-        private EncordFinishListener encordFinishListener;
 
         /**
          * 是否已停止
@@ -92,8 +96,8 @@ public class PcmChunkPlayer {
             }
         }
 
-        public void stopSafe(EncordFinishListener encordFinishListener) {
-            this.encordFinishListener = encordFinishListener;
+
+        public void stopSafe() {
             isOver = true;
             synchronized (this) {
                 notify();
@@ -127,7 +131,6 @@ public class PcmChunkPlayer {
             }
         }
 
-
         @Override
         public void run() {
             super.run();
@@ -137,11 +140,17 @@ public class PcmChunkPlayer {
             }
         }
 
+        long readSize = 0L;
+
         private void play(ChangeBuffer chunk) {
             if (chunk == null) {
                 return;
             }
-            player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getEndIndex());
+            readSize += chunk.getSize();
+            if (encordFinishListener != null) {
+                encordFinishListener.onPlaySize(readSize);
+            }
+            player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
         }
     }
 
@@ -149,12 +158,12 @@ public class PcmChunkPlayer {
         private byte[] rawData;
 
         private int startIndex;
-        private int endIndex;
+        private int size;
 
-        public ChangeBuffer(byte[] rawData, int startIndex, int endIndex) {
+        public ChangeBuffer(byte[] rawData, int startIndex, int size) {
             this.rawData = rawData.clone();
             this.startIndex = startIndex;
-            this.endIndex = endIndex;
+            this.size = size;
         }
 
         public byte[] getRawData() {
@@ -165,8 +174,8 @@ public class PcmChunkPlayer {
             return startIndex;
         }
 
-        public int getEndIndex() {
-            return endIndex;
+        public int getSize() {
+            return size;
         }
     }
 
@@ -176,6 +185,8 @@ public class PcmChunkPlayer {
          * 格式转换完毕
          */
         void onFinish();
+
+        void onPlaySize(long size);
     }
 
 }

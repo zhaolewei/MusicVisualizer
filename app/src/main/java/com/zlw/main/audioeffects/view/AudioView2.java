@@ -12,7 +12,6 @@ import android.view.View;
 
 import com.zlw.main.audioeffects.utils.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -24,10 +23,10 @@ public class AudioView2 extends View {
      * 频谱数量
      */
     private static int LUMP_COUNT = 128 * 4;
-    private static final int LUMP_WIDTH = 1;
+    private static final int LUMP_WIDTH = 2;
     private static final int LUMP_MIN_HEIGHT = LUMP_WIDTH;
-    private static final int LUMP_MAX_HEIGHT = 300;//TODO: HEIGHT
-    private static final int LUMP_SPACE = 0;
+    private static final int LUMP_MAX_HEIGHT = 200;
+    private static final int LUMP_SPACE = 1;
     private static final int LUMP_SIZE = LUMP_WIDTH + LUMP_SPACE;
 
     private static final int LUMP_COLOR = Color.parseColor("#cccccc");
@@ -38,8 +37,8 @@ public class AudioView2 extends View {
     List<Point> pointList;
 
     private Paint lumpPaint;
+    private Paint linePaint;
     Path wavePath = new Path();
-
 
     public AudioView2(Context context) {
         super(context);
@@ -58,16 +57,19 @@ public class AudioView2 extends View {
 
     private void init() {
         lumpPaint = new Paint();
-//        lumpPaint.setAntiAlias(true);
+        lumpPaint.setAntiAlias(true);
         lumpPaint.setColor(LUMP_COLOR);
-
         lumpPaint.setStrokeWidth(1);
         lumpPaint.setStyle(Paint.Style.STROKE);
+
+        linePaint = new Paint();
+        linePaint.setAntiAlias(true);
+        linePaint.setColor(Color.RED);
+        linePaint.setStrokeWidth(1);
     }
 
     public void setWaveData(byte[] data) {
         Logger.d("TAG", "setWaveData");
-        Logger.d("TAG", Arrays.toString(data));
         this.waveData = data;
         LUMP_COUNT = data.length;
         postInvalidate();
@@ -95,10 +97,30 @@ public class AudioView2 extends View {
             height = heightMeasureSpec;
         }
         if (modeH == MeasureSpec.UNSPECIFIED) {
-            height = 800;
+            height = LUMP_MAX_HEIGHT * 2;
         }
         setMeasuredDimension(width, height);
     }
+
+
+    public void setProgress(float progress) {
+        int width = LUMP_COUNT * (LUMP_WIDTH + LUMP_SPACE);
+        offsetX = (int) (width * progress);
+        postInvalidate();
+    }
+
+    public void setProgress(long size) {
+        int width = LUMP_COUNT * (LUMP_WIDTH + LUMP_SPACE);
+        long len = (waveData.length * 16 * 8 * 2);
+
+//        Logger.i("TAG", "progress size: %s/%s", size, len);
+        Logger.i("TAG", "progress size: %s/%s", size, len);
+
+        offsetX = (int) (width * size / len);
+        postInvalidate();
+    }
+
+    private int offsetX = 110;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -106,6 +128,7 @@ public class AudioView2 extends View {
         wavePath.reset();
         canvas.drawColor(Color.WHITE);
 
+        canvas.drawLine(offsetX, 0, offsetX, LUMP_MAX_HEIGHT * 2, linePaint);
         for (int i = 0; i < LUMP_COUNT; i++) {
             if (waveData == null) {
                 canvas.drawRect((LUMP_WIDTH + LUMP_SPACE) * i,
@@ -120,7 +143,7 @@ public class AudioView2 extends View {
             canvas.drawRect((LUMP_WIDTH + LUMP_SPACE) * i,
                     (LUMP_MAX_HEIGHT - LUMP_MIN_HEIGHT - value * SCALE),
                     (LUMP_WIDTH + LUMP_SPACE) * i + LUMP_WIDTH,
-                    LUMP_MAX_HEIGHT,
+                    LUMP_MAX_HEIGHT + LUMP_MIN_HEIGHT + value * SCALE,
                     lumpPaint);
         }
 

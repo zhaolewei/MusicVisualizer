@@ -39,13 +39,13 @@ public class Mp3Decoder {
     private PcmChunkPlayer pcmChunkPlayer = PcmChunkPlayer.getInstance();
     private File file = new File("sdcard/Record/result.pcm");
 
-    private FinishListener finishListener;
+    private InfoListener infoListener;
 
     private long decodeSize = 0L;
     private int dataIndex = 0;
 
-    public void init(int raw, FinishListener finishListener) {
-        this.finishListener = finishListener;
+    public void init(int raw, final InfoListener infoListener) {
+        this.infoListener = infoListener;
         Logger.d(TAG, "init...");
         try {
             if (file.exists()) {
@@ -60,6 +60,16 @@ public class Mp3Decoder {
             Logger.e(TAG, e.getMessage());
         }
         pcmChunkPlayer.init();
+        pcmChunkPlayer.setEncordFinishListener(new PcmChunkPlayer.EncordFinishListener() {
+            @Override
+            public void onFinish() {
+            }
+
+            @Override
+            public void onPlaySize(long size) {
+                infoListener.onProgress(size);
+            }
+        });
         try {
             mediaExtractor = new MediaExtractor();
             Uri uri = Uri.parse(String.format(Locale.getDefault(),
@@ -134,7 +144,7 @@ public class Mp3Decoder {
                 mediaDecode.queueInputBuffer(inputIndex, 0, sampleSize, 0, 0);
                 mediaExtractor.advance();
                 decodeSize += sampleSize;
-                Logger.d(TAG, "进度： %s/", decodeSize);
+//                Logger.d(TAG, "进度： %s/", decodeSize);
             } else {
                 codeOver = true;
                 Logger.d(TAG, "解码完成");
@@ -182,10 +192,10 @@ public class Mp3Decoder {
             pcmChunkPlayer.over();
             byte[] bytes = waveData.getBytes();
             Logger.i(TAG, "finish: %s", Arrays.toString(bytes));
-            finishListener.onFinish(bytes);
+            infoListener.onFinish(bytes);
             return;
         }
-        Logger.i(TAG, "putPcmChunk size: %s", pcmChunk.length);
+//        Logger.i(TAG, "putPcmChunk size: %s", pcmChunk.length);
         pcmChunkPlayer.putPcmData(pcmChunk, 0, pcmChunk.length);
         waveData.addData(pcmChunk);
         ByteUtils.byte2File(pcmChunk, file);
@@ -213,8 +223,10 @@ public class Mp3Decoder {
         }
     }
 
-    public interface FinishListener {
+    public interface InfoListener {
         void onFinish(byte[] data);
+
+        void onProgress(long progress);
     }
 
 }
