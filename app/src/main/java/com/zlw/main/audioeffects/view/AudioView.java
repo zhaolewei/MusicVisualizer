@@ -10,6 +10,8 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 
+import com.zlw.main.audioeffects.utils.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,6 +67,7 @@ public class AudioView extends View {
     }
 
     public void setWaveData(byte[] data) {
+        Logger.d("TAG", "setWaveData");
         this.waveData = data;
 
         if (pointList == null) {

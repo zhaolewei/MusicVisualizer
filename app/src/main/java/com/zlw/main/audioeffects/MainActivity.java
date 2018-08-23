@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         MUSIC_DATA.put("夜的钢琴曲.mp3", R.raw.ye);
         MUSIC_DATA.put("8000Hz音频.mp3", R.raw.m8000hz);
         MUSIC_DATA.put("忆夏思乡.mp3", R.raw.yixia);
-        MUSIC_DATA.put("忆夏思乡.mp3", R.raw.yixia);
+        MUSIC_DATA.put("hope.mp3", R.raw.hope);
     }
 
     private Visualizer visualizer;
