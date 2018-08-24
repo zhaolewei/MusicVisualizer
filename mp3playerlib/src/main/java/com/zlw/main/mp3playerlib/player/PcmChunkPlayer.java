@@ -68,12 +68,12 @@ public class PcmChunkPlayer {
         pcmChunkPlayerThread.start();
     }
 
-    public void putPcmData(byte[] chunk, int start, int end) {
+    public void putPcmData(byte[] chunk, int size) {
         if (pcmChunkPlayerThread == null) {
             Logger.w(TAG, "pcmChunkPlayerThread is null");
             return;
         }
-        pcmChunkPlayerThread.addChangeBuffer(new ChangeBuffer(chunk, start, end));
+        pcmChunkPlayerThread.addChangeBuffer(new ChangeBuffer(chunk, size));
     }
 
     public void over() {
@@ -90,7 +90,6 @@ public class PcmChunkPlayer {
         this.pcmChunkPlayerListener = pcmChunkPlayerListener;
     }
 
-
     public void release() {
         if (pcmChunkPlayerThread != null) {
             pcmChunkPlayerThread.stopNow();
@@ -102,7 +101,6 @@ public class PcmChunkPlayer {
             player = null;
         }
     }
-
 
     /**
      * PCM数据调度器
@@ -185,51 +183,50 @@ public class PcmChunkPlayer {
         }
 
         long readSize = 0L;
-        FrequencyScanner fftScanner = new FrequencyScanner();
 
         private void play(ChangeBuffer chunk) {
             if (chunk == null) {
                 return;
             }
             readSize += chunk.getSize();
-            if (pcmChunkPlayerListener != null) {
-                pcmChunkPlayerListener.onPlaySize(readSize);
-            }
 
-            double maxFrequency = fftScanner.getMaxFrequency(ByteUtils.toShorts(chunk.getRawData()));
-            if (!isVad || maxFrequency > VAD_THRESHOLD) {
+            if (!isVad || chunk.getVoiceSize() > VAD_THRESHOLD) {
                 if (pcmChunkPlayerListener != null) {
                     pcmChunkPlayerListener.onPlayData(chunk.getRawData());
+                    pcmChunkPlayerListener.onPlaySize(readSize);
                 }
                 if (player != null && start) {
-                    player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
+                    player.write(chunk.getRawData(), 0, chunk.getSize());
                 }
             }
         }
     }
 
+    private static FrequencyScanner fftScanner = new FrequencyScanner();
+
     public static class ChangeBuffer {
+
         private byte[] rawData;
 
-        private int startIndex;
         private int size;
+        private int voiceSize;
 
-        public ChangeBuffer(byte[] rawData, int startIndex, int size) {
+        public ChangeBuffer(byte[] rawData, int size) {
             this.rawData = rawData.clone();
-            this.startIndex = startIndex;
             this.size = size;
+            this.voiceSize = (int) fftScanner.getMaxFrequency(ByteUtils.toShorts(rawData));
         }
 
         public byte[] getRawData() {
             return rawData;
         }
 
-        public int getStartIndex() {
-            return startIndex;
-        }
-
         public int getSize() {
             return size;
+        }
+
+        public int getVoiceSize() {
+            return voiceSize;
         }
     }
 

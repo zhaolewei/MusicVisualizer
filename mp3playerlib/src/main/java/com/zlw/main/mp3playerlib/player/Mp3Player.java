@@ -2,6 +2,7 @@ package com.zlw.main.mp3playerlib.player;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.widget.Toast;
 
 import com.zlw.main.mp3playerlib.utils.ByteUtils;
 import com.zlw.main.mp3playerlib.utils.FrequencyScanner;
@@ -83,6 +84,11 @@ public class Mp3Player {
     }
 
     public void play(Context context, boolean vad) {
+        if (isPrepare) {
+            Logger.e(TAG, "正在初始化文件");
+            Toast.makeText(context, "正在初始化文件", Toast.LENGTH_LONG).show();
+            return;
+        }
         release();
         this.vad = vad;
         pcmChunkPlayer.init(vad, new PcmChunkPlayer.PcmChunkPlayerListener() {
@@ -113,7 +119,7 @@ public class Mp3Player {
 
             @Override
             public void onDecodeData(byte[] pcmChunk) {
-                pcmChunkPlayer.putPcmData(pcmChunk, 0, pcmChunk.length);
+                pcmChunkPlayer.putPcmData(pcmChunk, pcmChunk.length);
                 mergerDecodeDataAsync(pcmChunk);
             }
         });

@@ -37,7 +37,7 @@ public class PcmFileWaveView extends View {
      * 数据计算的吞吐量
      * 数据越小，采样值越多，越精确
      */
-    public static final int DEFAULT_FFT_THRUPUT = 16 * 8;
+    public static final int DEFAULT_FFT_THRUPUT = 16 * 16;
 
     private byte[] waveData;
     private Paint lumpPaint;
@@ -145,8 +145,8 @@ public class PcmFileWaveView extends View {
         if (waveData == null || waveData.length == 0) {
             return;
         }
+        Logger.v(TAG, "size : %s", size);
         long len = (waveData.length * DEFAULT_FFT_THRUPUT * 2);
-        Logger.v("TAG", "progress size: %s/%s", size, len);
         lineOffsetX = (int) (width * size / len);
         postInvalidate();
     }

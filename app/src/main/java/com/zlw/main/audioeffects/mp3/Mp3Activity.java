@@ -43,7 +43,7 @@ public class Mp3Activity extends AppCompatActivity {
     private void init() {
         mp3Player = Mp3Player.getInstance();
         mp3Player.release();
-        mp3Player.init(R.raw.test2, new Mp3Player.PlayInfoListener() {
+        mp3Player.init(R.raw.test, new Mp3Player.PlayInfoListener() {
             @Override
             public void onPlayProgress() {
 
