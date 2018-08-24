@@ -44,7 +44,7 @@ public class Mp3Decoder {
     private long decodeSize = 0L;
     private int dataIndex = 0;
 
-    public void init(int raw, final InfoListener infoListener) {
+    public void init(boolean vad, int raw, final InfoListener infoListener) {
         this.infoListener = infoListener;
         Logger.d(TAG, "init...");
         try {
@@ -60,6 +60,7 @@ public class Mp3Decoder {
             Logger.e(TAG, e.getMessage());
         }
         pcmChunkPlayer.init();
+        pcmChunkPlayer.setVad(vad);
         pcmChunkPlayer.setEncordFinishListener(new PcmChunkPlayer.EncordFinishListener() {
             @Override
             public void onFinish() {

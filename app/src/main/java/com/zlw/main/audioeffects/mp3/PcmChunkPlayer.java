@@ -4,6 +4,8 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 
+import com.zlw.main.audioeffects.mp3.utils.FrequencyScanner;
+import com.zlw.main.audioeffects.utils.ByteUtils;
 import com.zlw.main.audioeffects.utils.Logger;
 
 import java.util.Collections;
@@ -23,6 +25,8 @@ public class PcmChunkPlayer {
     private boolean isPlaying;
     private PcmChunkPlayerThread pcmChunkPlayerThread;
 
+    private volatile boolean isVad = false;
+
     public static PcmChunkPlayer getInstance() {
         if (instance == null) {
             synchronized (PcmChunkPlayer.class) {
@@ -32,6 +36,10 @@ public class PcmChunkPlayer {
             }
         }
         return instance;
+    }
+
+    public synchronized void setVad(boolean vad) {
+        isVad = vad;
     }
 
     public void init() {
@@ -67,6 +75,7 @@ public class PcmChunkPlayer {
     public void setEncordFinishListener(EncordFinishListener encordFinishListener) {
         this.encordFinishListener = encordFinishListener;
     }
+
     /**
      * PCM数据调度器
      */
@@ -136,11 +145,17 @@ public class PcmChunkPlayer {
             super.run();
 
             while (start) {
-                play(next());
+                ChangeBuffer next = next();
+                if (next == null) {
+                    return;
+                }
+                next.add(next());
+                play(next);
             }
         }
 
         long readSize = 0L;
+        FrequencyScanner fftScanner = new FrequencyScanner();
 
         private void play(ChangeBuffer chunk) {
             if (chunk == null) {
@@ -150,7 +165,12 @@ public class PcmChunkPlayer {
             if (encordFinishListener != null) {
                 encordFinishListener.onPlaySize(readSize);
             }
-            player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
+
+            double maxFrequency = fftScanner.getMaxFrequency(ByteUtils.toShorts(chunk.getRawData()));
+            Logger.w(TAG, "此段声音： %s", maxFrequency);
+            if (!isVad || maxFrequency > 20) {
+                player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
+            }
         }
     }
 
@@ -176,6 +196,14 @@ public class PcmChunkPlayer {
 
         public int getSize() {
             return size;
+        }
+
+        public ChangeBuffer add(ChangeBuffer nextData) {
+            if (nextData != null) {
+                this.rawData = ByteUtils.byteMerger(this.rawData, nextData.rawData);
+                this.size = this.size + nextData.size;
+            }
+            return this;
         }
     }
 

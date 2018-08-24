@@ -22,7 +22,7 @@ public class Mp3Activity extends AppCompatActivity {
     Mp3Decoder mp3Decoder;
     AudioView2 audioView;
 
-    private Button btPlay;
+    private Button btPlay, btPlayVad;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,21 +30,25 @@ public class Mp3Activity extends AppCompatActivity {
         setContentView(R.layout.layout_mp3);
         audioView = findViewById(R.id.audioView);
         btPlay = findViewById(R.id.btPlay);
-
+        btPlayVad = findViewById(R.id.btPlayVad);
         btPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                play();
+                play(false);
+            }
+        });
+        btPlayVad.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                play(true);
             }
         });
         showWave();
-
-
     }
 
-    private void play() {
+    private void play(boolean vad) {
         mp3Decoder = new Mp3Decoder();
-        mp3Decoder.init(R.raw.test, new Mp3Decoder.InfoListener() {
+        mp3Decoder.init(vad, R.raw.test, new Mp3Decoder.InfoListener() {
             @Override
             public void onFinish(final byte[] data) {
                 audioView.post(new Runnable() {
@@ -93,12 +97,6 @@ public class Mp3Activity extends AppCompatActivity {
         return fft(shorts);
     }
 
-
-    /**
-     * @param data
-     * @param sampleRate
-     * @return
-     */
     private byte[] fft(short[] sampleData) {
         Logger.i(TAG, "sampleData sie：%s ", sampleData.length);
         Logger.i(TAG, "估算时长：%s s", sampleData.length / 16000);

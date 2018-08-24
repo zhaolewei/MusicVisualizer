@@ -23,4 +23,12 @@
         android:layout_height="wrap_content"
         android:layout_margin="30dp"
         android:text="播放" />
+
+
+    <Button
+        android:id="@+id/btPlayVad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="30dp"
+        android:text="去除静音播放" />
 </LinearLayout>
