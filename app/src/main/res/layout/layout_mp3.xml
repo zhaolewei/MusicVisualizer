@@ -7,28 +7,42 @@
 
     <HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="400px"
+        android:layout_height="wrap_content"
         android:background="#ccc"
         android:gravity="center">
 
-        <com.zlw.main.audioeffects.view.AudioView2
+        <com.zlw.main.audioeffects.view.PcmFileWaveView
             android:id="@+id/audioView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
     </HorizontalScrollView>
 
-    <Button
-        android:id="@+id/btPlay"
-        android:layout_width="wrap_content"
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="30dp"
-        android:text="播放" />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btPlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="30dp"
+            android:text="播放" />
 
 
-    <Button
-        android:id="@+id/btPlayVad"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="30dp"
-        android:text="去除静音播放" />
+        <Button
+            android:id="@+id/btPlayVad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="30dp"
+            android:text="去除静音播放" />
+
+        <Button
+            android:id="@+id/tvText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="30dp"
+            android:text="" />
+    </LinearLayout>
 </LinearLayout>

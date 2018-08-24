@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/AudioEffects.iml" filepath="$PROJECT_DIR$/AudioEffects.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/mp3playerlib/mp3playerlib.iml" filepath="$PROJECT_DIR$/mp3playerlib/mp3playerlib.iml" />
     </modules>
   </component>
 </project>

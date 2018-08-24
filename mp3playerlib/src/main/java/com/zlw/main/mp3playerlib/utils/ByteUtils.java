@@ -1,6 +1,8 @@
-package com.zlw.main.audioeffects.utils;
+package com.zlw.main.mp3playerlib.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -157,4 +159,38 @@ public class ByteUtils {
             Logger.e(e, TAG, e.getMessage());
         }
     }
+
+    /**
+     * 将byte[] 追加到文件末尾
+     */
+    public static byte[] byte2FileForResult(byte[] buf, File file) {
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
+            long fileLength = file.length();
+            randomAccessFile.seek(fileLength);
+            randomAccessFile.write(buf);
+        } catch (Exception e) {
+            Logger.e(e, TAG, e.getMessage());
+        }
+        return file2Bytes(file);
+
+    }
+
+    public static byte[] file2Bytes(File file) {
+
+        byte[] buffer = null;
+        try (FileInputStream fis = new FileInputStream(file);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+
+            byte[] b = new byte[1024];
+            int n;
+            while ((n = fis.read(b)) != -1) {
+                bos.write(b, 0, n);
+            }
+            buffer = bos.toByteArray();
+        } catch (Exception e) {
+            Logger.e(e, TAG, e.getMessage());
+        }
+        return buffer;
+    }
+
 }

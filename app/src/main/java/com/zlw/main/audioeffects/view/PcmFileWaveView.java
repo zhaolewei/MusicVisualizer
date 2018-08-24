@@ -4,58 +4,68 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 
 import com.zlw.main.audioeffects.utils.Logger;
 
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * @author zhaolewei on 2018/8/17.
  */
-public class AudioView2 extends View {
+public class PcmFileWaveView extends View {
 
-    /**
-     * 频谱数量
-     */
-    private static int LUMP_COUNT = 128 * 4;
+    private int lumpCount;
     private static final int LUMP_WIDTH = 2;
-    private static final int LUMP_MIN_HEIGHT = LUMP_WIDTH;
-    private static final int LUMP_MAX_HEIGHT = 200;
     private static final int LUMP_SPACE = 1;
+    private static final int LUMP_MIN_HEIGHT = 2;
+    /**
+     * Lump的最大高度，也是基准线的Y值，height = LUMP_MAX_HEIGHT*2
+     */
+    private static final int LUMP_MAX_HEIGHT = 300;
+    private static final int MAX_HEIGHT = LUMP_MAX_HEIGHT * 2;
     private static final int LUMP_SIZE = LUMP_WIDTH + LUMP_SPACE;
-
     private static final int LUMP_COLOR = Color.parseColor("#cccccc");
-
-    private static final float SCALE = 1;
+    private static final float SCALE = LUMP_MAX_HEIGHT / 200;
+    /**
+     * 数据计算的吞吐量
+     * 数据越小，采样值越多，越精确
+     */
+    public static final int DEFAULT_FFT_THRUPUT = 16 * 8;
 
     private byte[] waveData;
-    List<Point> pointList;
-
     private Paint lumpPaint;
     private Paint linePaint;
-    Path wavePath = new Path();
+    private int lineOffsetX = 10;
 
-    public AudioView2(Context context) {
+    private PcmFileWaveConverter pcmFileWaveConverter;
+
+    public PcmFileWaveView(Context context) {
         super(context);
         init();
     }
 
-    public AudioView2(Context context, @Nullable AttributeSet attrs) {
+    public PcmFileWaveView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public AudioView2(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public PcmFileWaveView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
 
     private void init() {
+        /**
+         * 数转换策略： 将数据拆分成N段，每段数据大小为DEFAULT_FFT_THRUPUT，对每段数据进行FFT转换，提取特征频谱的相对振幅，再用于数据的可视化
+         */
+        pcmFileWaveConverter = new PcmFileWaveConverter(DEFAULT_FFT_THRUPUT);
         lumpPaint = new Paint();
         lumpPaint.setAntiAlias(true);
         lumpPaint.setColor(LUMP_COLOR);
@@ -68,11 +78,32 @@ public class AudioView2 extends View {
         linePaint.setStrokeWidth(1);
     }
 
+    /**
+     * @param data pcm数据
+     */
     public void setWaveData(byte[] data) {
-        Logger.d("TAG", "setWaveData");
-        this.waveData = data;
-        LUMP_COUNT = data.length;
+        this.waveData = pcmFileWaveConverter.readyDataByte(data);
+        lumpCount = waveData.length;
         postInvalidate();
+    }
+
+
+    public void showPcmFileWave(File file) {
+        byte[] buffer;
+        try (FileInputStream fis = new FileInputStream(file);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+
+            byte[] b = new byte[1024];
+            int n;
+            while ((n = fis.read(b)) != -1) {
+                bos.write(b, 0, n);
+            }
+
+            buffer = bos.toByteArray();
+            setWaveData(buffer);
+        } catch (Exception e) {
+            Logger.e(e, TAG, e.getMessage());
+        }
     }
 
     @Override
@@ -97,52 +128,50 @@ public class AudioView2 extends View {
             height = heightMeasureSpec;
         }
         if (modeH == MeasureSpec.UNSPECIFIED) {
-            height = LUMP_MAX_HEIGHT * 2;
+            height = MAX_HEIGHT;
         }
         setMeasuredDimension(width, height);
     }
 
 
     public void setProgress(float progress) {
-        int width = LUMP_COUNT * (LUMP_WIDTH + LUMP_SPACE);
-        offsetX = (int) (width * progress);
+        int width = lumpCount * LUMP_SIZE;
+        lineOffsetX = (int) (width * progress);
         postInvalidate();
     }
 
     public void setProgress(long size) {
-        int width = LUMP_COUNT * (LUMP_WIDTH + LUMP_SPACE);
-        long len = (waveData.length * 16 * 8 * 2);
-
-//        Logger.i("TAG", "progress size: %s/%s", size, len);
-        Logger.i("TAG", "progress size: %s/%s", size, len);
-
-        offsetX = (int) (width * size / len);
+        int width = lumpCount * LUMP_SIZE;
+        if (waveData == null || waveData.length == 0) {
+            return;
+        }
+        long len = (waveData.length * DEFAULT_FFT_THRUPUT * 2);
+        Logger.v("TAG", "progress size: %s/%s", size, len);
+        lineOffsetX = (int) (width * size / len);
         postInvalidate();
     }
 
-    private int offsetX = 110;
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        wavePath.reset();
         canvas.drawColor(Color.WHITE);
 
-        canvas.drawLine(offsetX, 0, offsetX, LUMP_MAX_HEIGHT * 2, linePaint);
-        for (int i = 0; i < LUMP_COUNT; i++) {
+        canvas.drawLine(lineOffsetX, 0, lineOffsetX, MAX_HEIGHT, linePaint);
+        for (int i = 0; i < lumpCount; i++) {
             if (waveData == null) {
-                canvas.drawRect((LUMP_WIDTH + LUMP_SPACE) * i,
+                canvas.drawRect(LUMP_SIZE * i,
                         LUMP_MAX_HEIGHT - LUMP_MIN_HEIGHT,
-                        (LUMP_WIDTH + LUMP_SPACE) * i + LUMP_WIDTH,
+                        LUMP_SIZE * i + LUMP_WIDTH,
                         LUMP_MAX_HEIGHT,
                         lumpPaint);
                 continue;
             }
 
             int value = waveData[i];
-            canvas.drawRect((LUMP_WIDTH + LUMP_SPACE) * i,
+            canvas.drawRect(LUMP_SIZE * i,
                     (LUMP_MAX_HEIGHT - LUMP_MIN_HEIGHT - value * SCALE),
-                    (LUMP_WIDTH + LUMP_SPACE) * i + LUMP_WIDTH,
+                    LUMP_SIZE * i + LUMP_WIDTH,
                     LUMP_MAX_HEIGHT + LUMP_MIN_HEIGHT + value * SCALE,
                     lumpPaint);
         }

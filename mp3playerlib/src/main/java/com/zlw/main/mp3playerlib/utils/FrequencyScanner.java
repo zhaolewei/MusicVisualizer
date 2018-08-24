@@ -1,4 +1,4 @@
-package com.zlw.main.audioeffects.mp3.utils;
+package com.zlw.main.mp3playerlib.utils;
 
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 
@@ -13,6 +13,9 @@ public class FrequencyScanner {
     }
 
     public double getMaxFrequency(short[] sampleData) {
+        if (sampleData == null || sampleData.length == 0) {
+            return 0;
+        }
         /* sampleData + zero padding */
         DoubleFFT_1D fft = new DoubleFFT_1D(sampleData.length + 24 * sampleData.length);
         double[] a = new double[(sampleData.length + 24 * sampleData.length) * 2];
@@ -33,7 +36,7 @@ public class FrequencyScanner {
             }
         }
 
-        return maxMag / (a.length / 8);
+        return maxMag / (a.length >> 2);
     }
 
     /**

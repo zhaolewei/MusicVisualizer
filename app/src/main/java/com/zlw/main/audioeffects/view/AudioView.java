@@ -34,7 +34,6 @@ public class AudioView extends View {
 
     private static final float SCALE = LUMP_MAX_HEIGHT / LUMP_COUNT;
 
-
     private byte[] waveData;
     List<Point> pointList;
 
@@ -65,6 +64,7 @@ public class AudioView extends View {
         lumpPaint.setStrokeWidth(2);
         lumpPaint.setStyle(Paint.Style.STROKE);
     }
+
 
     public void setWaveData(byte[] data) {
         Logger.d("TAG", "setWaveData");

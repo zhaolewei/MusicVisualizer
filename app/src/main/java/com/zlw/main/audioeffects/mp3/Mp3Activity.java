@@ -4,33 +4,98 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.zlw.main.audioeffects.R;
-import com.zlw.main.audioeffects.mp3.utils.FrequencyScanner;
+import com.zlw.main.audioeffects.base.MyApp;
 import com.zlw.main.audioeffects.utils.Logger;
-import com.zlw.main.audioeffects.view.AudioView2;
+import com.zlw.main.audioeffects.view.PcmFileWaveView;
+import com.zlw.main.mp3playerlib.player.Mp3Player;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 
 /**
  * @author zhaolewei on 2018/8/23.
  */
 public class Mp3Activity extends AppCompatActivity {
     private static final String TAG = Mp3Activity.class.getSimpleName();
-    Mp3Decoder mp3Decoder;
-    AudioView2 audioView;
+    Mp3Player mp3Player;
+    PcmFileWaveView audioView;
 
     private Button btPlay, btPlayVad;
+    private TextView tvText;
+    private long time;
+
+    private boolean isFirst = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_mp3);
+        initView();
+        init();
+    }
+
+    private void play(boolean vad) {
+        mp3Player.play(this, vad);
+    }
+
+    private void init() {
+        mp3Player = Mp3Player.getInstance();
+        mp3Player.release();
+        mp3Player.init(R.raw.test2, new Mp3Player.PlayInfoListener() {
+            @Override
+            public void onPlayProgress() {
+
+            }
+
+            @Override
+            public void onDecodeFinish(File file) {
+                Logger.d(TAG, "onDecodeFinish");
+                audioView.showPcmFileWave(file);
+                isFirst = false;
+            }
+
+            @Override
+            public void onPlaySize(long playsize) {
+                audioView.setProgress(playsize);
+            }
+
+            @Override
+            public void onVoiceSize(final int playsize) {
+                tvText.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tvText.setText("当前音量： " + playsize);
+                    }
+                });
+            }
+
+            @Override
+            public void onDecodeData(final byte[] data) {
+                if (!isFirst) {
+                    return;
+                }
+                if (System.currentTimeMillis() - time < 500) {
+                    return;
+                }
+                time = System.currentTimeMillis();
+                audioView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        audioView.setWaveData(data);
+                    }
+                });
+            }
+        });
+        mp3Player.prepare(MyApp.getInstance());
+    }
+
+    private void initView() {
         audioView = findViewById(R.id.audioView);
         btPlay = findViewById(R.id.btPlay);
         btPlayVad = findViewById(R.id.btPlayVad);
+        tvText = findViewById(R.id.tvText);
         btPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -43,83 +108,6 @@ public class Mp3Activity extends AppCompatActivity {
                 play(true);
             }
         });
-        showWave();
-    }
-
-    private void play(boolean vad) {
-        mp3Decoder = new Mp3Decoder();
-        mp3Decoder.init(vad, R.raw.test, new Mp3Decoder.InfoListener() {
-            @Override
-            public void onFinish(final byte[] data) {
-                audioView.post(new Runnable() {
-                    @Override
-                    public void run() {
-//                        showWave();
-                    }
-                });
-            }
-
-            @Override
-            public void onProgress(long progress) {
-                audioView.setProgress(progress);
-            }
-        });
-    }
-
-    private void showWave() {
-        Logger.i(TAG, "showWave");
-        File file = new File("sdcard/Record/result.pcm");
-        byte[] buffer;
-        try {
-            FileInputStream fis = new FileInputStream(file);
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            byte[] b = new byte[1024];
-            int n;
-            while ((n = fis.read(b)) != -1) {
-                bos.write(b, 0, n);
-            }
-            fis.close();
-            bos.close();
-            buffer = bos.toByteArray();
-            audioView.setWaveData(readyDataByte(buffer));
-        } catch (Exception e) {
-            Logger.e(e, TAG, e.getMessage());
-        }
-    }
-
-    /**
-     * 预处理16Bit数据
-     *
-     * @return
-     */
-    public byte[] readyDataByte(byte[] data) {
-        short[] shorts = com.zlw.main.audioeffects.utils.ByteUtils.toShorts(data);
-        return fft(shorts);
-    }
-
-    private byte[] fft(short[] sampleData) {
-        Logger.i(TAG, "sampleData sie：%s ", sampleData.length);
-        Logger.i(TAG, "估算时长：%s s", sampleData.length / 16000);
-
-        int que = 16 * 8;
-        Logger.i(TAG, "循环次数：%s s", sampleData.length / que);
-        byte[] reslut = new byte[sampleData.length / que];
-
-        short[] data = new short[que];
-        for (int i = 0; i < sampleData.length; i = i + que) {
-            int end = i + que;
-            if (end > sampleData.length) {
-                break;
-            }
-            for (int j = i; j < end; j++) {
-                data[j % que] = sampleData[j];
-            }
-            double extractFrequency = new FrequencyScanner().getMaxFrequency(data);
-            reslut[i / que] = (byte) ((byte) extractFrequency > 127 ? 127 : extractFrequency);
-            Logger.i(TAG, "取值[%s-%s] 相对振幅：%s ", i, end, extractFrequency);
-        }
-
-        return reslut;
     }
 
 }

@@ -1,12 +1,12 @@
-package com.zlw.main.audioeffects.mp3;
+package com.zlw.main.mp3playerlib.player;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 
-import com.zlw.main.audioeffects.mp3.utils.FrequencyScanner;
-import com.zlw.main.audioeffects.utils.ByteUtils;
-import com.zlw.main.audioeffects.utils.Logger;
+import com.zlw.main.mp3playerlib.utils.ByteUtils;
+import com.zlw.main.mp3playerlib.utils.FrequencyScanner;
+import com.zlw.main.mp3playerlib.utils.Logger;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -17,14 +17,17 @@ import java.util.List;
  */
 public class PcmChunkPlayer {
     private static final String TAG = PcmChunkPlayer.class.getSimpleName();
-
     private static final int PARAM_SAMPLE_RATE_IN_HZ = 16000;
+    private static final int VAD_THRESHOLD = 8;
 
     private static PcmChunkPlayer instance;
+
     private AudioTrack player;
-    private boolean isPlaying;
     private PcmChunkPlayerThread pcmChunkPlayerThread;
 
+    /**
+     * 是否开启静音跳过功能
+     */
     private volatile boolean isVad = false;
 
     public static PcmChunkPlayer getInstance() {
@@ -38,11 +41,22 @@ public class PcmChunkPlayer {
         return instance;
     }
 
+    private PcmChunkPlayer() {
+
+    }
+
     public synchronized void setVad(boolean vad) {
         isVad = vad;
     }
 
-    public void init() {
+    public void init(boolean vad, PcmChunkPlayerListener pcmChunkPlayerListener) {
+        release();
+        init();
+        setVad(vad);
+        setPcmChunkPlayerListener(pcmChunkPlayerListener);
+    }
+
+    private void init() {
         int bufferSizeInBytes = AudioTrack.getMinBufferSize(PARAM_SAMPLE_RATE_IN_HZ,
                 AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
         player = new AudioTrack(AudioManager.STREAM_MUSIC, PARAM_SAMPLE_RATE_IN_HZ,
@@ -67,14 +81,28 @@ public class PcmChunkPlayer {
             Logger.w(TAG, "pcmChunkPlayerThread is null");
             return;
         }
-        pcmChunkPlayerThread.isOver = true;
+        pcmChunkPlayerThread.stopSafe();
     }
 
-    private EncordFinishListener encordFinishListener;
+    private PcmChunkPlayerListener pcmChunkPlayerListener;
 
-    public void setEncordFinishListener(EncordFinishListener encordFinishListener) {
-        this.encordFinishListener = encordFinishListener;
+    public void setPcmChunkPlayerListener(PcmChunkPlayerListener pcmChunkPlayerListener) {
+        this.pcmChunkPlayerListener = pcmChunkPlayerListener;
     }
+
+
+    public void release() {
+        if (pcmChunkPlayerThread != null) {
+            pcmChunkPlayerThread.stopNow();
+            pcmChunkPlayerThread = null;
+        }
+
+        if (player != null) {
+            player.release();
+            player = null;
+        }
+    }
+
 
     /**
      * PCM数据调度器
@@ -82,7 +110,7 @@ public class PcmChunkPlayer {
     public class PcmChunkPlayerThread extends Thread {
 
         /**
-         * PCM 缓冲数据
+         * PCM 数据缓冲队列
          */
         private List<ChangeBuffer> cacheBufferList = Collections.synchronizedList(new LinkedList<ChangeBuffer>());
 
@@ -105,9 +133,16 @@ public class PcmChunkPlayer {
             }
         }
 
-
         public void stopSafe() {
             isOver = true;
+            synchronized (this) {
+                notify();
+            }
+        }
+
+        public void stopNow() {
+            isOver = true;
+            start = false;
             synchronized (this) {
                 notify();
             }
@@ -135,8 +170,8 @@ public class PcmChunkPlayer {
 
         private void finish() {
             start = false;
-            if (encordFinishListener != null) {
-                encordFinishListener.onFinish();
+            if (pcmChunkPlayerListener != null) {
+                pcmChunkPlayerListener.onFinish();
             }
         }
 
@@ -145,12 +180,7 @@ public class PcmChunkPlayer {
             super.run();
 
             while (start) {
-                ChangeBuffer next = next();
-                if (next == null) {
-                    return;
-                }
-                next.add(next());
-                play(next);
+                play(next());
             }
         }
 
@@ -162,14 +192,18 @@ public class PcmChunkPlayer {
                 return;
             }
             readSize += chunk.getSize();
-            if (encordFinishListener != null) {
-                encordFinishListener.onPlaySize(readSize);
+            if (pcmChunkPlayerListener != null) {
+                pcmChunkPlayerListener.onPlaySize(readSize);
             }
 
             double maxFrequency = fftScanner.getMaxFrequency(ByteUtils.toShorts(chunk.getRawData()));
-            Logger.w(TAG, "此段声音： %s", maxFrequency);
-            if (!isVad || maxFrequency > 20) {
-                player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
+            if (!isVad || maxFrequency > VAD_THRESHOLD) {
+                if (pcmChunkPlayerListener != null) {
+                    pcmChunkPlayerListener.onPlayData(chunk.getRawData());
+                }
+                if (player != null && start) {
+                    player.write(chunk.getRawData(), chunk.getStartIndex(), chunk.getSize());
+                }
             }
         }
     }
@@ -197,24 +231,24 @@ public class PcmChunkPlayer {
         public int getSize() {
             return size;
         }
-
-        public ChangeBuffer add(ChangeBuffer nextData) {
-            if (nextData != null) {
-                this.rawData = ByteUtils.byteMerger(this.rawData, nextData.rawData);
-                this.size = this.size + nextData.size;
-            }
-            return this;
-        }
     }
 
 
-    public interface EncordFinishListener {
+    public interface PcmChunkPlayerListener {
         /**
-         * 格式转换完毕
+         * 播放完成
          */
         void onFinish();
 
+        /**
+         * 已播放的数据量
+         */
         void onPlaySize(long size);
+
+        /**
+         * 播放的数据
+         */
+        void onPlayData(byte[] size);
     }
 
 }
