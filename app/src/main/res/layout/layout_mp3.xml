@@ -45,4 +45,13 @@
             android:layout_margin="30dp"
             android:text="" />
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/ivSwitch"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_margin="20dp"
+        android:background="#aaaaaa"
+        android:padding="6dp"
+        android:src="@drawable/icon_switch" />
 </LinearLayout>

@@ -17,8 +17,11 @@ public class DataHelper {
      */
     public static byte[] readyData(byte[] fft) {
         byte[] newData = new byte[MAX_SIZE];
+        byte abs = 0;
         for (int i = 0; i < MAX_SIZE; i++) {
-            newData[i] = (byte) (Math.abs(fft[i]));
+            abs = (byte) Math.abs(fft[i]);
+            //描述：Math.abs -128时越界
+            newData[i] = abs < 0 ? 127 : abs;
         }
         return newData;
     }
