@@ -31,7 +31,13 @@ public class Mp3Decoder {
     private volatile boolean start = false;
     private volatile boolean decodeOver = false;
 
+    private int sampleBit, channelCount, sampleRate;
+
+    //TODO : File
     public void init(Context context, int raw, final InfoListener infoListener) {
+        if (infoListener == null) {
+            return;
+        }
         this.infoListener = infoListener;
         Logger.d(TAG, "init...");
         try {
@@ -43,13 +49,19 @@ public class Mp3Decoder {
             for (int i = 0; i < mediaExtractor.getTrackCount(); i++) {
                 MediaFormat format = mediaExtractor.getTrackFormat(i);
                 String mime = format.getString(MediaFormat.KEY_MIME);
-                long duration = format.getLong(MediaFormat.KEY_DURATION);
                 if (mime.startsWith("audio")) {
+                    long duration = format.getLong(MediaFormat.KEY_DURATION);
+                    sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                    channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+                    int bitRate = format.getInteger(MediaFormat.KEY_BIT_RATE);
+                    sampleBit = bitRate / sampleRate / channelCount * 8;
                     format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 200 * 1024);
                     mediaExtractor.selectTrack(i);
                     mediaDecode = MediaCodec.createDecoderByType(mime);
                     mediaDecode.configure(format, null, null, 0);
-                    Logger.i(TAG, "音频信息：mime：%s, duration: %ss", mime, duration / 1000L);
+                    Logger.i(TAG, "音频信息：类型：%s, 时长: %ss,采样率：%s Hz,声道数：%s,位宽：%s,码率：%s kbps",
+                            mime, duration / 1000000L, sampleRate, channelCount, sampleBit, bitRate / 1000L);
+                    infoListener.onPrepare(sampleRate, 16, channelCount);
                     break;
                 }
             }
@@ -69,7 +81,6 @@ public class Mp3Decoder {
         Logger.i(TAG, "input buffers: %s", decodeInputBuffers.length);
         startAsync();
     }
-
 
     public void release() {
         infoListener = null;
@@ -176,6 +187,8 @@ public class Mp3Decoder {
 
     public interface InfoListener {
         void onFinish();
+
+        void onPrepare(int sampleRate, int sampleBit, int channelCount);
 
         void onDecodeData(byte pcmChunk[]);
     }

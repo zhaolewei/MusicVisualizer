@@ -17,13 +17,22 @@ import java.util.List;
  */
 public class PcmChunkPlayer {
     private static final String TAG = PcmChunkPlayer.class.getSimpleName();
-    private static final int PARAM_SAMPLE_RATE_IN_HZ = 16000;
+    private static final int DEFAULT_SAMPLE_RATE = 16000;
+    private static final int DEFAULT_CHANNEL_COUNT = 1;
+
     private static final int VAD_THRESHOLD = 8;
 
     private static PcmChunkPlayer instance;
 
     private AudioTrack player;
     private PcmChunkPlayerThread pcmChunkPlayerThread;
+
+    private int sampleRate = DEFAULT_SAMPLE_RATE;
+    /**
+     * 单声道
+     */
+    private int sampleBitConfig = AudioFormat.CHANNEL_OUT_MONO;
+    private int channelCountConfig = AudioFormat.ENCODING_PCM_16BIT;
 
     /**
      * 是否开启静音跳过功能
@@ -49,6 +58,29 @@ public class PcmChunkPlayer {
         isVad = vad;
     }
 
+    /**
+     * 设置Pcm的音频格式
+     */
+    public void setFormat(int sampleRate, int sampleBit, int channelCount) {
+        this.sampleRate = sampleRate;
+
+        if (sampleBit == 16) {
+            this.sampleBitConfig = AudioFormat.ENCODING_PCM_16BIT;
+        } else if (sampleBit == 8) {
+            this.sampleBitConfig = AudioFormat.ENCODING_PCM_8BIT;
+        } else {
+            this.sampleBitConfig = AudioFormat.ENCODING_PCM_FLOAT;
+        }
+
+        if (channelCount == 1) {
+            this.channelCountConfig = AudioFormat.CHANNEL_OUT_MONO;
+        } else if (channelCount == 2) {
+            this.channelCountConfig = AudioFormat.CHANNEL_OUT_STEREO;
+        } else {
+            Logger.e(TAG, "不支持该声道数：%s", channelCount);
+        }
+    }
+
     public void init(boolean vad, PcmChunkPlayerListener pcmChunkPlayerListener) {
         release();
         init();
@@ -57,10 +89,11 @@ public class PcmChunkPlayer {
     }
 
     private void init() {
-        int bufferSizeInBytes = AudioTrack.getMinBufferSize(PARAM_SAMPLE_RATE_IN_HZ,
-                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        player = new AudioTrack(AudioManager.STREAM_MUSIC, PARAM_SAMPLE_RATE_IN_HZ,
-                AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT,
+        Logger.d(TAG, "音频：sampleRate: %s ，sampleBitConfig：%s,channelCountConfig：%s ", sampleRate, sampleBitConfig, channelCountConfig);
+        int bufferSizeInBytes = AudioTrack.getMinBufferSize(sampleRate,
+                channelCountConfig, sampleBitConfig);
+        player = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate,
+                channelCountConfig, sampleBitConfig,
                 bufferSizeInBytes, AudioTrack.MODE_STREAM);
 
         player.play();
@@ -73,7 +106,7 @@ public class PcmChunkPlayer {
             Logger.w(TAG, "pcmChunkPlayerThread is null");
             return;
         }
-        pcmChunkPlayerThread.addChangeBuffer(new ChangeBuffer(chunk, size));
+        pcmChunkPlayerThread.addChangeBuffer(new ChangeBuffer(chunk, size, sampleRate));
     }
 
     public void over() {
@@ -211,10 +244,10 @@ public class PcmChunkPlayer {
         private int size;
         private int voiceSize;
 
-        public ChangeBuffer(byte[] rawData, int size) {
+        public ChangeBuffer(byte[] rawData, int size, int sampleRate) {
             this.rawData = rawData.clone();
             this.size = size;
-            this.voiceSize = (int) fftScanner.getMaxFrequency(ByteUtils.toShorts(rawData));
+            this.voiceSize = (int) fftScanner.getMaxFrequency(ByteUtils.toShorts(rawData), sampleRate);
         }
 
         public byte[] getRawData() {

@@ -33,7 +33,6 @@ public class Mp3Player {
      */
     private File cacheFile = new File("sdcard/Record/result.pcm");
 
-    private boolean vad;
     private int raw;
 
     public static Mp3Player getInstance() {
@@ -77,20 +76,46 @@ public class Mp3Player {
             }
 
             @Override
+            public void onPrepare(int sampleRate, int sampleBit, int channelCount) {
+                pcmChunkPlayer.setFormat(sampleRate, sampleBit, channelCount);
+            }
+
+            @Override
             public void onDecodeData(byte[] pcmChunk) {
                 mergerDecodeDataAsync(pcmChunk);
             }
         });
     }
 
-    public void play(Context context, boolean vad) {
+    public void play(Context context, final boolean vad) {
         if (isPrepare) {
-            Logger.e(TAG, "正在初始化文件");
+            Logger.w(TAG, "正在初始化文件");
             Toast.makeText(context, "正在初始化文件", Toast.LENGTH_LONG).show();
             return;
         }
         release();
-        this.vad = vad;
+        mp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.InfoListener() {
+            @Override
+            public void onFinish() {
+                pcmChunkPlayer.over();
+                infoListener.onDecodeFinish(cacheFile);
+            }
+
+            @Override
+            public void onPrepare(int sampleRate, int sampleBit, int channelCount) {
+                initPcmChunkPlayer(vad, sampleRate, sampleBit, channelCount);
+            }
+
+            @Override
+            public void onDecodeData(byte[] pcmChunk) {
+                pcmChunkPlayer.putPcmData(pcmChunk, pcmChunk.length);
+                mergerDecodeDataAsync(pcmChunk);
+            }
+        });
+    }
+
+    private void initPcmChunkPlayer(boolean vad, final int sampleRate, int sampleBit, int channelCount) {
+        pcmChunkPlayer.setFormat(sampleRate, sampleBit, channelCount);
         pcmChunkPlayer.init(vad, new PcmChunkPlayer.PcmChunkPlayerListener() {
             @Override
             public void onFinish() {
@@ -103,28 +128,13 @@ public class Mp3Player {
 
             @Override
             public void onPlayData(byte[] size) {
-                double maxFrequency = frequencyScanner.getMaxFrequency(ByteUtils.toShorts(size));
+                double maxFrequency = frequencyScanner.getMaxFrequency(ByteUtils.toShorts(size), sampleRate);
                 if (infoListener != null) {
                     infoListener.onVoiceSize((int) maxFrequency);
                 }
             }
         });
-
-        mp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.InfoListener() {
-            @Override
-            public void onFinish() {
-                pcmChunkPlayer.over();
-                infoListener.onDecodeFinish(cacheFile);
-            }
-
-            @Override
-            public void onDecodeData(byte[] pcmChunk) {
-                pcmChunkPlayer.putPcmData(pcmChunk, pcmChunk.length);
-                mergerDecodeDataAsync(pcmChunk);
-            }
-        });
     }
-
 
     private void mergerDecodeDataAsync(final byte[] pcmChunk) {
         if (threadPool != null) {
@@ -155,7 +165,6 @@ public class Mp3Player {
             boolean newFile = cacheFile.createNewFile();
             if (!newFile) {
                 Logger.e(TAG, "创建文件失败");
-                return;
             }
         } catch (Exception e) {
             Logger.e(TAG, e.getMessage());

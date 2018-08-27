@@ -34,7 +34,7 @@ public class PcmFileWaveConverter {
             for (int j = i; j < end; j++) {
                 data[j % fftThruput] = sampleData[j];
             }
-            double extractFrequency = new FrequencyScanner().getMaxFrequency(data);
+            double extractFrequency = new FrequencyScanner().getMaxFrequency(data, 16000);
             result[i / fftThruput] = (byte) (extractFrequency > 127 ? 127 : extractFrequency);
         }
 

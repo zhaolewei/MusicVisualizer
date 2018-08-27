@@ -12,7 +12,7 @@ public class FrequencyScanner {
         window = null;
     }
 
-    public double getMaxFrequency(short[] sampleData) {
+    public double getMaxFrequency(short[] sampleData, int sampleRate) {
         if (sampleData == null || sampleData.length == 0) {
             return 0;
         }
@@ -36,7 +36,7 @@ public class FrequencyScanner {
             }
         }
 
-        return maxMag / (a.length >> 2);
+        return ((int) maxMag / sampleRate) << 2;
     }
 
     /**
