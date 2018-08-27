@@ -25,7 +25,7 @@
         </activity>
 
         <activity
-            android:name=".mp3.Mp3Activity"
+            android:name=".Mp3Activity"
             android:screenOrientation="landscape">
             <!--<intent-filter>-->
             <!--<action android:name="android.intent.action.MAIN" />-->

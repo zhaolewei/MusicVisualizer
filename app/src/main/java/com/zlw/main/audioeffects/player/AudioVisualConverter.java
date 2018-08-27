@@ -12,6 +12,7 @@ import java.util.Map;
  * 音频可视化数据处理器
  *
  * @author zhaolewei on 2018/8/18.
+ * @deprecated
  */
 public class AudioVisualConverter {
 

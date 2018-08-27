@@ -6,6 +6,7 @@ import java.nio.FloatBuffer;
 
 /**
  * @author zhaolewei on 2018/7/31.
+ * @deprecated
  */
 public class RecordUtils {
     /**

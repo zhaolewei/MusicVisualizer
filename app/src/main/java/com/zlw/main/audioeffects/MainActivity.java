@@ -1,14 +1,17 @@
 package com.zlw.main.audioeffects;
 
 import android.Manifest;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.audiofx.Visualizer;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -50,7 +53,10 @@ public class MainActivity extends AppCompatActivity {
     private AudioView audioView2;
     private Spinner spinner;
     private TextView tvVoiceSize;
-    AudioManager audioManager;
+    private ImageView ivSwitch;
+
+    private AudioManager audioManager;
+    private MyMediaPlayer mediaPlayer;
 
     private Visualizer.OnDataCaptureListener dataCaptureListener = new Visualizer.OnDataCaptureListener() {
         @Override
@@ -72,11 +78,8 @@ public class MainActivity extends AppCompatActivity {
                     tvVoiceSize.setText(String.format(Locale.getDefault(), "当前分贝: %s db", audioVisualConverter.getVoiceSize(fft)));
                 }
             });
-
-
         }
     };
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +88,24 @@ public class MainActivity extends AppCompatActivity {
         audioManager = (AudioManager) this.getSystemService(AUDIO_SERVICE);
         initView();
         initEvent();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (visualizer != null) {
+            visualizer.release();
+        }
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Logger.d(TAG, "requestCode:%s", requestCode);
+        initVisualizer();
     }
 
     private void initEvent() {
@@ -114,12 +135,19 @@ public class MainActivity extends AppCompatActivity {
         audioView2.setStyle(AudioView.ShowStyle.STYLE_HOLLOW_LUMP, AudioView.ShowStyle.STYLE_WAVE);
         spinner = findViewById(R.id.spinner);
         tvVoiceSize = findViewById(R.id.tvVoiceSize);
+        ivSwitch = findViewById(R.id.ivSwitch);
+        ivSwitch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, Mp3Activity.class));
+                finish();
+            }
+        });
     }
 
     private void play(int res) {
-
         isInit = false;
-        MyMediaPlayer mediaPlayer = MyMediaPlayer.getInstance();
+        mediaPlayer = MyMediaPlayer.getInstance();
         mediaPlayer.play(res);
         mediaPlayer.setPlayStateListener(new MyMediaPlayer.PlayStateListener() {
             @Override
@@ -157,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
             visualizer.setEnabled(true);
         } catch (Exception e) {
             Logger.e(TAG, "请检查录音权限");
+            isInit = false;
         }
     }
 

@@ -1,4 +1,4 @@
-package com.zlw.main.audioeffects.mp3;
+package com.zlw.main.audioeffects;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,8 +8,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.zlw.main.audioeffects.MainActivity;
-import com.zlw.main.audioeffects.R;
 import com.zlw.main.audioeffects.base.MyApp;
 import com.zlw.main.audioeffects.utils.Logger;
 import com.zlw.main.audioeffects.view.PcmFileWaveView;
@@ -100,7 +98,6 @@ public class Mp3Activity extends AppCompatActivity {
         btPlay = findViewById(R.id.btPlay);
         btPlayVad = findViewById(R.id.btPlayVad);
         tvText = findViewById(R.id.tvText);
-        ivSwitch = findViewById(R.id.ivSwitch);
         btPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -113,10 +110,12 @@ public class Mp3Activity extends AppCompatActivity {
                 play(true);
             }
         });
+        ivSwitch = findViewById(R.id.ivSwitch);
         ivSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(Mp3Activity.this, MainActivity.class));
+                finish();
             }
         });
     }
