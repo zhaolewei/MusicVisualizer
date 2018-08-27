@@ -54,6 +54,12 @@ public class MyMediaPlayer {
         }
     };
 
+    /**
+     * 获取MediaPlayerId
+     * 可视化类Visualizer需要此参数
+     *
+     * @return MediaPlayerId
+     */
     public int getMediaPlayerId() {
         return mediaPlayer.getAudioSessionId();
     }

@@ -16,7 +16,6 @@ import com.zlw.main.audioeffects.player.AudioVisualConverter;
 import com.zlw.main.audioeffects.player.MyMediaPlayer;
 import com.zlw.main.audioeffects.utils.Logger;
 import com.zlw.main.audioeffects.view.AudioView;
-import com.zlw.main.audioeffects.view.DataHelper;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -39,10 +38,9 @@ public class MainActivity extends AppCompatActivity {
         MUSIC_DATA.put("雨霖铃.mp3", R.raw.yulinling);
         MUSIC_DATA.put("清平调.mp3", R.raw.qingpingdiao);
         MUSIC_DATA.put("China-X.mp3", R.raw.china_x);
-        MUSIC_DATA.put("夜的钢琴曲.mp3", R.raw.ye);
         MUSIC_DATA.put("8000Hz音频.mp3", R.raw.m8000hz);
         MUSIC_DATA.put("忆夏思乡.mp3", R.raw.yixia);
-        MUSIC_DATA.put("忆夏思乡.mp3", R.raw.yixia);
+        MUSIC_DATA.put("Axero.mp3", R.raw.axero);
     }
 
     private Visualizer visualizer;
@@ -57,18 +55,25 @@ public class MainActivity extends AppCompatActivity {
     private Visualizer.OnDataCaptureListener dataCaptureListener = new Visualizer.OnDataCaptureListener() {
         @Override
         public void onWaveFormDataCapture(Visualizer visualizer, final byte[] waveform, int samplingRate) {
+            audioView.post(new Runnable() {
+                @Override
+                public void run() {
+                    audioView.setWaveData(waveform);
+                }
+            });
         }
 
         @Override
         public void onFftDataCapture(Visualizer visualizer, final byte[] fft, int samplingRate) {
-            audioView.setWaveData(DataHelper.readyData(fft));
-            audioView2.setWaveData(DataHelper.getData(fft));
-            tvVoiceSize.post(new Runnable() {
+            audioView2.post(new Runnable() {
                 @Override
                 public void run() {
+                    audioView2.setWaveData(fft);
                     tvVoiceSize.setText(String.format(Locale.getDefault(), "当前分贝: %s db", audioVisualConverter.getVoiceSize(fft)));
                 }
             });
+
+
         }
     };
 
@@ -80,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
         audioManager = (AudioManager) this.getSystemService(AUDIO_SERVICE);
         initView();
         initEvent();
-        play(R.raw.grace);
     }
 
     private void initEvent() {
@@ -105,12 +109,15 @@ public class MainActivity extends AppCompatActivity {
     private void initView() {
         setContentView(R.layout.activity_main);
         audioView = findViewById(R.id.audioView);
+        audioView.setStyle(AudioView.ShowStyle.STYLE_HOLLOW_LUMP, AudioView.ShowStyle.STYLE_NOTHING);
         audioView2 = findViewById(R.id.audioView2);
+        audioView2.setStyle(AudioView.ShowStyle.STYLE_HOLLOW_LUMP, AudioView.ShowStyle.STYLE_WAVE);
         spinner = findViewById(R.id.spinner);
         tvVoiceSize = findViewById(R.id.tvVoiceSize);
     }
 
     private void play(int res) {
+
         isInit = false;
         MyMediaPlayer mediaPlayer = MyMediaPlayer.getInstance();
         mediaPlayer.play(res);
@@ -139,11 +146,13 @@ public class MainActivity extends AppCompatActivity {
             }
             visualizer = new Visualizer(mediaPlayerId);
 
-            int captureSize = Visualizer.getCaptureSizeRange()[0] * 8;
-            visualizer.setCaptureSize(captureSize);
+            int captureSize = Visualizer.getCaptureSizeRange()[1];
+            int captureRate = Visualizer.getMaxCaptureRate() * 3 / 4;
             Logger.d(TAG, "精度: %s", captureSize);
-            Logger.d(TAG, "高频: %s", Visualizer.getMaxCaptureRate() / 2);
-            visualizer.setDataCaptureListener(dataCaptureListener, Visualizer.getMaxCaptureRate() / 2, true, true);
+            Logger.d(TAG, "刷新频率: %s", captureRate);
+
+            visualizer.setCaptureSize(captureSize);
+            visualizer.setDataCaptureListener(dataCaptureListener, captureRate, true, true);
             visualizer.setScalingMode(Visualizer.SCALING_MODE_NORMALIZED);
             visualizer.setEnabled(true);
         } catch (Exception e) {

@@ -1,5 +1,7 @@
 package com.zlw.main.audioeffects.utils;
 
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -7,7 +9,7 @@ import java.util.Arrays;
  * @author zhaoleweion 2018/8/3.
  */
 public class ByteUtils {
-
+    private static final String TAG = ByteUtils.class.getSimpleName();
 
     /**
      * short[] 转 byte[]
@@ -23,6 +25,41 @@ public class ByteUtils {
         return dest;
     }
 
+    /**
+     * 浮点转换为字节
+     */
+    public static byte[] toBytes(float f) {
+        // 把float转换为byte[]
+        int fbit = Float.floatToIntBits(f);
+
+        byte[] b = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            b[i] = (byte) (fbit >> (24 - i * 8));
+        }
+
+        // 翻转数组
+        int len = b.length;
+        // 建立一个与源数组元素类型相同的数组
+        byte[] dest = new byte[len];
+        // 为了防止修改源数组，将源数组拷贝一份副本
+        System.arraycopy(b, 0, dest, 0, len);
+        byte temp;
+        // 将顺位第i个与倒数第i个交换
+        for (int i = 0; i < len / 2; ++i) {
+            temp = dest[i];
+            dest[i] = dest[len - i - 1];
+            dest[len - i - 1] = temp;
+        }
+        return dest;
+
+    }
+
+    public static byte[] byteMerger(byte[] bt1, byte[] bt2) {
+        byte[] bt3 = new byte[bt1.length + bt2.length];
+        System.arraycopy(bt1, 0, bt3, 0, bt1.length);
+        System.arraycopy(bt2, 0, bt3, bt1.length, bt2.length);
+        return bt3;
+    }
 
     /**
      * short[] 转 byte[]
@@ -106,5 +143,18 @@ public class ByteUtils {
 
     public static String toString(byte[] b) {
         return Arrays.toString(b);
+    }
+
+    /**
+     * 将byte[] 追加到文件末尾
+     */
+    public static void byte2File(byte[] buf, File file) {
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw")) {
+            long fileLength = file.length();
+            randomAccessFile.seek(fileLength);
+            randomAccessFile.write(buf);
+        } catch (Exception e) {
+            Logger.e(e, TAG, e.getMessage());
+        }
     }
 }
