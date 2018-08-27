@@ -87,7 +87,6 @@ public class PcmFileWaveView extends View {
         postInvalidate();
     }
 
-
     public void showPcmFileWave(File file) {
         byte[] buffer;
         try (FileInputStream fis = new FileInputStream(file);
@@ -175,7 +174,6 @@ public class PcmFileWaveView extends View {
                     LUMP_MAX_HEIGHT + LUMP_MIN_HEIGHT + value * SCALE,
                     lumpPaint);
         }
-
     }
 
 }

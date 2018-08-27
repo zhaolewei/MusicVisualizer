@@ -30,6 +30,51 @@ public class Mp3Activity extends AppCompatActivity {
 
     private boolean isFirst = true;
 
+    private Mp3Player.PlayInfoListener playInfoListener = new Mp3Player.PlayInfoListener() {
+        @Override
+        public void onPlayProgress() {
+        }
+
+        @Override
+        public void onDecodeFinish(File file) {
+            Logger.d(TAG, "onDecodeFinish");
+            audioView.showPcmFileWave(file);
+            isFirst = false;
+        }
+
+        @Override
+        public void onPlaySize(long playsize) {
+            audioView.setProgress(playsize);
+        }
+
+        @Override
+        public void onVoiceSize(final int playsize) {
+            tvText.post(new Runnable() {
+                @Override
+                public void run() {
+                    tvText.setText("当前音量： " + playsize);
+                }
+            });
+        }
+
+        @Override
+        public void onDecodeData(final byte[] data) {
+            if (!isFirst) {
+                return;
+            }
+            if (System.currentTimeMillis() - time < 1000) {
+                return;
+            }
+            time = System.currentTimeMillis();
+            audioView.post(new Runnable() {
+                @Override
+                public void run() {
+                    audioView.setWaveData(data);
+                }
+            });
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,58 +83,14 @@ public class Mp3Activity extends AppCompatActivity {
         init();
     }
 
+
     private void play(boolean vad) {
         mp3Player.play(this, vad);
     }
 
     private void init() {
-        mp3Player = Mp3Player.getInstance();
-        mp3Player.release();
-        mp3Player.init(R.raw.test, new Mp3Player.PlayInfoListener() {
-            @Override
-            public void onPlayProgress() {
-
-            }
-
-            @Override
-            public void onDecodeFinish(File file) {
-                Logger.d(TAG, "onDecodeFinish");
-                audioView.showPcmFileWave(file);
-                isFirst = false;
-            }
-
-            @Override
-            public void onPlaySize(long playsize) {
-                audioView.setProgress(playsize);
-            }
-
-            @Override
-            public void onVoiceSize(final int playsize) {
-                tvText.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        tvText.setText("当前音量： " + playsize);
-                    }
-                });
-            }
-
-            @Override
-            public void onDecodeData(final byte[] data) {
-                if (!isFirst) {
-                    return;
-                }
-                if (System.currentTimeMillis() - time < 500) {
-                    return;
-                }
-                time = System.currentTimeMillis();
-                audioView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        audioView.setWaveData(data);
-                    }
-                });
-            }
-        });
+        mp3Player = Mp3Player.create(R.raw.test);
+        mp3Player.setPlayInfoListener(playInfoListener);
         mp3Player.prepare(MyApp.getInstance());
     }
 

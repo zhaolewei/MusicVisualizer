@@ -26,7 +26,7 @@ public class Mp3Decoder {
     private MediaCodec.BufferInfo decodeBufferInfo;
 
     private long decodeSize = 0L;
-    private InfoListener infoListener;
+    private Mp3DecoderListener mp3DecoderListener;
     private ByteBuffer[] decodeInputBuffers, decodeOutputBuffers;
     private volatile boolean start = false;
     private volatile boolean decodeOver = false;
@@ -34,11 +34,11 @@ public class Mp3Decoder {
     private int sampleBit, channelCount, sampleRate;
 
     //TODO : File
-    public void init(Context context, int raw, final InfoListener infoListener) {
-        if (infoListener == null) {
+    public void init(Context context, int raw, final Mp3DecoderListener mp3DecoderListener) {
+        if (mp3DecoderListener == null) {
             return;
         }
-        this.infoListener = infoListener;
+        this.mp3DecoderListener = mp3DecoderListener;
         Logger.d(TAG, "init...");
         try {
             mediaExtractor = new MediaExtractor();
@@ -55,13 +55,13 @@ public class Mp3Decoder {
                     channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
                     int bitRate = format.getInteger(MediaFormat.KEY_BIT_RATE);
                     sampleBit = bitRate / sampleRate / channelCount * 8;
-                    format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 200 * 1024);
+                    format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 8 * 1024);
                     mediaExtractor.selectTrack(i);
                     mediaDecode = MediaCodec.createDecoderByType(mime);
                     mediaDecode.configure(format, null, null, 0);
                     Logger.i(TAG, "音频信息：类型：%s, 时长: %ss,采样率：%s Hz,声道数：%s,位宽：%s,码率：%s kbps",
                             mime, duration / 1000000L, sampleRate, channelCount, sampleBit, bitRate / 1000L);
-                    infoListener.onPrepare(sampleRate, 16, channelCount);
+                    mp3DecoderListener.onPrepare(sampleRate, 16, channelCount);
                     break;
                 }
             }
@@ -83,7 +83,7 @@ public class Mp3Decoder {
     }
 
     public void release() {
-        infoListener = null;
+        mp3DecoderListener = null;
         decodeOver = false;
         start = false;
         if (mediaExtractor != null) {
@@ -152,7 +152,7 @@ public class Mp3Decoder {
                 }
             }
         } catch (Exception e) {
-            Logger.w(TAG, "中断解码");
+            Logger.w(e, TAG, "中断解码");
         }
 
     }
@@ -175,22 +175,23 @@ public class Mp3Decoder {
     }
 
     private void putPcmChunk(byte[] pcmChunk) {
-        if (infoListener == null) {
+        if (mp3DecoderListener == null) {
             return;
         }
         if (pcmChunk == null) {
-            infoListener.onFinish();
+            mp3DecoderListener.onFinish();
             return;
         }
-        infoListener.onDecodeData(pcmChunk);
+        mp3DecoderListener.onDecodeData(pcmChunk);
     }
 
-    public interface InfoListener {
-        void onFinish();
+    public interface Mp3DecoderListener {
 
         void onPrepare(int sampleRate, int sampleBit, int channelCount);
 
         void onDecodeData(byte pcmChunk[]);
+
+        void onFinish();
     }
 
 }

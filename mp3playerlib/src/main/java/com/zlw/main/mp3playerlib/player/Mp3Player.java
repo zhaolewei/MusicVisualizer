@@ -33,6 +33,7 @@ public class Mp3Player {
      */
     private File cacheFile = new File("sdcard/Record/result.pcm");
 
+    private boolean isPreparing = true;
     private int raw;
 
     public static Mp3Player getInstance() {
@@ -57,24 +58,23 @@ public class Mp3Player {
                 });
     }
 
-    public void init(int raw, PlayInfoListener playInfoListener) {
-        this.infoListener = playInfoListener;
-        this.raw = raw;
-        mp3Decoder = new Mp3Decoder();
-        pcmChunkPlayer = PcmChunkPlayer.getInstance();
+    public static Mp3Player create(int raw) {
+        Mp3Player mp3Player = new Mp3Player();
+        mp3Player.raw = raw;
+        mp3Player.release();
+        mp3Player.mp3Decoder = new Mp3Decoder();
+        mp3Player.pcmChunkPlayer = PcmChunkPlayer.getInstance();
+        return mp3Player;
     }
 
-    private boolean isPrepare = true;
+    public void setPlayInfoListener(PlayInfoListener playInfoListener) {
+        this.infoListener = playInfoListener;
+    }
+
 
     public void prepare(Context context) {
         Mp3Decoder newMp3Decoder = new Mp3Decoder();
-        newMp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.InfoListener() {
-            @Override
-            public void onFinish() {
-                infoListener.onDecodeFinish(cacheFile);
-                isPrepare = false;
-            }
-
+        newMp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.Mp3DecoderListener() {
             @Override
             public void onPrepare(int sampleRate, int sampleBit, int channelCount) {
                 pcmChunkPlayer.setFormat(sampleRate, sampleBit, channelCount);
@@ -84,17 +84,23 @@ public class Mp3Player {
             public void onDecodeData(byte[] pcmChunk) {
                 mergerDecodeDataAsync(pcmChunk);
             }
+
+            @Override
+            public void onFinish() {
+                infoListener.onDecodeFinish(cacheFile);
+                isPreparing = false;
+            }
         });
     }
 
     public void play(Context context, final boolean vad) {
-        if (isPrepare) {
+        if (isPreparing) {
             Logger.w(TAG, "正在初始化文件");
             Toast.makeText(context, "正在初始化文件", Toast.LENGTH_LONG).show();
             return;
         }
         release();
-        mp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.InfoListener() {
+        mp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.Mp3DecoderListener() {
             @Override
             public void onFinish() {
                 pcmChunkPlayer.over();
