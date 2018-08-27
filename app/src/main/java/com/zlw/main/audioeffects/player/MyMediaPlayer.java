@@ -2,6 +2,7 @@ package com.zlw.main.audioeffects.player;
 
 import android.media.MediaPlayer;
 import android.media.audiofx.Equalizer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -72,12 +73,20 @@ public class MyMediaPlayer {
         initHandlerThread();
     }
 
-
     public synchronized void play(final int raw) {
         playThreadHandler.post(new Runnable() {
             @Override
             public void run() {
                 doPlay(raw);
+            }
+        });
+    }
+
+    public synchronized void play(final Uri uri) {
+        playThreadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                doPlay(uri);
             }
         });
     }
@@ -198,6 +207,41 @@ public class MyMediaPlayer {
             mediaPlayer = null;
         }
     }
+
+
+    /**
+     * 播放音频
+     *
+     * @param raw 资源文件id
+     */
+    private synchronized void doPlay(final Uri raw) {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+
+        try {
+            mediaPlayer = MediaPlayer.create(MyApp.getInstance(), raw);
+            if (mediaPlayer == null) {
+                Logger.e(TAG, "mediaPlayer is null");
+                return;
+            }
+
+            mediaPlayer.setOnInfoListener(infoListener);
+            mediaPlayer.setOnErrorListener(errorListener);
+            mediaPlayer.setOnCompletionListener(completionListener);
+            mediaPlayer.setOnPreparedListener(preparedListener);
+        } catch (Exception e) {
+            Logger.e(e, TAG, e.getMessage());
+            stop();
+            release();
+            mediaPlayer = null;
+        }
+    }
+
 
     /**
      * 注：此方法在子线程中

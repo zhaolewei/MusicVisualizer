@@ -2,8 +2,8 @@ package com.zlw.main.audioeffects;
 
 import android.Manifest;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.media.audiofx.Visualizer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -15,12 +15,16 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.zlw.main.audioeffects.base.MyApp;
 import com.zlw.main.audioeffects.player.AudioVisualConverter;
 import com.zlw.main.audioeffects.player.MyMediaPlayer;
 import com.zlw.main.audioeffects.utils.Logger;
+import com.zlw.main.audioeffects.utils.MusicFileHelper;
+import com.zlw.main.audioeffects.utils.UriHelper;
 import com.zlw.main.audioeffects.view.AudioView;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -32,18 +36,18 @@ public class MainActivity extends AppCompatActivity {
             Manifest.permission.MODIFY_AUDIO_SETTINGS
     };
 
-    private static final Map<String, Integer> MUSIC_DATA = new HashMap<>();
+    private static final Map<String, Uri> MUSIC_DATA = new HashMap<>();
 
     {
-        MUSIC_DATA.put("剑墨.mp3", R.raw.mo);
-        MUSIC_DATA.put("grace.mp3", R.raw.grace);
-        MUSIC_DATA.put("faded.mp3", R.raw.faded);
-        MUSIC_DATA.put("雨霖铃.mp3", R.raw.yulinling);
-        MUSIC_DATA.put("清平调.mp3", R.raw.qingpingdiao);
-        MUSIC_DATA.put("China-X.mp3", R.raw.china_x);
-        MUSIC_DATA.put("8000Hz音频.mp3", R.raw.m8000hz);
-        MUSIC_DATA.put("忆夏思乡.mp3", R.raw.yixia);
-        MUSIC_DATA.put("Axero.mp3", R.raw.axero);
+        MUSIC_DATA.put("grace.mp3", UriHelper.getResUri(R.raw.grace));
+        MUSIC_DATA.put("雨霖铃.mp3", UriHelper.getResUri(R.raw.yulinling));
+        MUSIC_DATA.put("China-X.mp3", UriHelper.getResUri(R.raw.china_x));
+        MUSIC_DATA.put("忆夏思乡.mp3", UriHelper.getResUri(R.raw.yixia2));
+        MUSIC_DATA.put("Axero.mp3", UriHelper.getResUri(R.raw.axero));
+        List<MusicFileHelper.Song> musicList = MusicFileHelper.getMusicList(MyApp.getInstance());
+        for (MusicFileHelper.Song song : musicList) {
+            MUSIC_DATA.put(song.song, UriHelper.getFileUri(song.path));
+        }
     }
 
     private Visualizer visualizer;
@@ -55,7 +59,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvVoiceSize;
     private ImageView ivSwitch;
 
-    private AudioManager audioManager;
     private MyMediaPlayer mediaPlayer;
 
     private Visualizer.OnDataCaptureListener dataCaptureListener = new Visualizer.OnDataCaptureListener() {
@@ -85,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS, 1);
-        audioManager = (AudioManager) this.getSystemService(AUDIO_SERVICE);
         initView();
         initEvent();
     }
@@ -145,10 +147,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void play(int res) {
+    private void play(Uri uri) {
         isInit = false;
         mediaPlayer = MyMediaPlayer.getInstance();
-        mediaPlayer.play(res);
+        mediaPlayer.play(uri);
         mediaPlayer.setPlayStateListener(new MyMediaPlayer.PlayStateListener() {
             @Override
             public void onStateChange(MyMediaPlayer.PlayState state) {
