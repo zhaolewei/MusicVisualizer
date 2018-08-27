@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
         MUSIC_DATA.put("雨霖铃.mp3", UriHelper.getResUri(R.raw.yulinling));
         MUSIC_DATA.put("China-X.mp3", UriHelper.getResUri(R.raw.china_x));
         MUSIC_DATA.put("忆夏思乡.mp3", UriHelper.getResUri(R.raw.yixia2));
-        MUSIC_DATA.put("Axero.mp3", UriHelper.getResUri(R.raw.axero));
         List<MusicFileHelper.Song> musicList = MusicFileHelper.getMusicList(MyApp.getInstance());
         for (MusicFileHelper.Song song : musicList) {
             MUSIC_DATA.put(song.song, UriHelper.getFileUri(song.path));
