@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.zlw.main.audioeffects.base.MyApp;
 import com.zlw.main.audioeffects.utils.Logger;
 import com.zlw.main.audioeffects.view.PcmFileWaveView;
-import com.zlw.main.mp3playerlib.player.Mp3Player;
+import com.zlw.main.mp3playerlib.player.FFmpegMp3Player;
 
 import java.io.File;
 
@@ -20,8 +20,8 @@ import java.io.File;
  */
 public class Mp3Activity extends AppCompatActivity {
     private static final String TAG = Mp3Activity.class.getSimpleName();
-    Mp3Player mp3Player;
-    PcmFileWaveView audioView;
+    private FFmpegMp3Player mp3Player;
+    private PcmFileWaveView audioView;
 
     private Button btPlay, btPlayVad;
     private TextView tvText;
@@ -30,7 +30,7 @@ public class Mp3Activity extends AppCompatActivity {
 
     private boolean isFirst = true;
 
-    private Mp3Player.PlayInfoListener playInfoListener = new Mp3Player.PlayInfoListener() {
+    private FFmpegMp3Player.PlayInfoListener playInfoListener = new FFmpegMp3Player.PlayInfoListener() {
         @Override
         public void onPlayProgress() {
         }
@@ -83,13 +83,12 @@ public class Mp3Activity extends AppCompatActivity {
         init();
     }
 
-
     private void play(boolean vad) {
         mp3Player.play(this, vad);
     }
 
     private void init() {
-        mp3Player = Mp3Player.create(R.raw.test);
+        mp3Player = FFmpegMp3Player.create(R.raw.test);
         mp3Player.setPlayInfoListener(playInfoListener);
         mp3Player.prepare(MyApp.getInstance());
     }

@@ -1,10 +1,10 @@
 package com.zlw.main.mp3playerlib.player;
 
 import android.content.Context;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.widget.Toast;
 
+import com.zlw.main.mp3playerlib.decoder.FFmpegMp3Decoder;
 import com.zlw.main.mp3playerlib.utils.ByteUtils;
 import com.zlw.main.mp3playerlib.utils.FrequencyScanner;
 import com.zlw.main.mp3playerlib.utils.Logger;
@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
  *
  * @author zhaolewei on 2018/8/24.
  */
-public class Mp3Player {
-    private static Mp3Player instance;
-    private static final String TAG = Mp3Player.class.getSimpleName();
+public class FFmpegMp3Player {
+    private static FFmpegMp3Player instance;
+    private static final String TAG = FFmpegMp3Player.class.getSimpleName();
     private Mp3Decoder mp3Decoder;
     private PcmChunkPlayer pcmChunkPlayer;
     private ExecutorService threadPool;
@@ -36,20 +36,19 @@ public class Mp3Player {
 
     private boolean isPreparing = true;
     private int raw;
-    private Uri uri;
 
-    public static Mp3Player getInstance() {
+    public static FFmpegMp3Player getInstance() {
         if (instance == null) {
-            synchronized (Mp3Player.class) {
+            synchronized (FFmpegMp3Player.class) {
                 if (instance == null) {
-                    instance = new Mp3Player();
+                    instance = new FFmpegMp3Player();
                 }
             }
         }
         return instance;
     }
 
-    private Mp3Player() {
+    private FFmpegMp3Player() {
         threadPool = new ThreadPoolExecutor(1, 1, 10000L,
                 TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
                 new ThreadFactory() {
@@ -60,8 +59,8 @@ public class Mp3Player {
                 });
     }
 
-    public static Mp3Player create(int raw) {
-        Mp3Player mp3Player = new Mp3Player();
+    public static FFmpegMp3Player create(int raw) {
+        FFmpegMp3Player mp3Player = new FFmpegMp3Player();
         mp3Player.raw = raw;
         mp3Player.release();
         mp3Player.mp3Decoder = new Mp3Decoder();
@@ -73,23 +72,24 @@ public class Mp3Player {
         this.infoListener = playInfoListener;
     }
 
+    long time;
+
     public void prepare(Context context) {
-        Mp3Decoder newMp3Decoder = new Mp3Decoder();
-        newMp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.Mp3DecoderListener() {
+        time = System.currentTimeMillis();
+        FFmpegMp3Decoder newMp3Decoder = new FFmpegMp3Decoder(context);
+        newMp3Decoder.mp3ToPcm(new File("sdcard/Record/test.mp3"), cacheFile, new FFmpegMp3Decoder.ResultCallback() {
             @Override
-            public void onPrepare(int sampleRate, int sampleBit, int channelCount) {
-                pcmChunkPlayer.setFormat(sampleRate, sampleBit, channelCount);
-            }
-
-            @Override
-            public void onDecodeData(byte[] pcmChunk) {
-                mergerDecodeDataAsync(pcmChunk);
-            }
-
-            @Override
-            public void onFinish() {
-                infoListener.onDecodeFinish(cacheFile);
+            public void onSuccess() {
+                Logger.i(TAG, "Ffmpage 转换耗时： %s ms", (System.currentTimeMillis() - time));
                 isPreparing = false;
+                if (infoListener != null) {
+                    infoListener.onDecodeFinish(cacheFile);
+                }
+            }
+
+            @Override
+            public void onFailure() {
+
             }
         });
     }
