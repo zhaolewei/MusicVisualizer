@@ -47,7 +47,7 @@ public class FFmpegMp3Decoder {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        execFFmpegBinary(new String[]{"-y", "-i", srcFile.getPath(), "-f", "s16be", resultFile.getPath()});
+        execFFmpegBinary(new String[]{"-y", "-i", srcFile.getPath(), "-f", "s16le", resultFile.getPath()});
     }
 
     public void execFFmpegBinary(final String[] cmd) {

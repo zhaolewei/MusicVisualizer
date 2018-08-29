@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 public class FFmpegMp3Player {
     private static FFmpegMp3Player instance;
     private static final String TAG = FFmpegMp3Player.class.getSimpleName();
-    private Mp3Decoder mp3Decoder;
     private PcmChunkPlayer pcmChunkPlayer;
     private ExecutorService threadPool;
     private PlayInfoListener infoListener;
@@ -36,6 +35,7 @@ public class FFmpegMp3Player {
 
     private boolean isPreparing = true;
     private int raw;
+    private File srcFile = new File("sdcard/Record/test.mp3");
 
     public static FFmpegMp3Player getInstance() {
         if (instance == null) {
@@ -63,7 +63,6 @@ public class FFmpegMp3Player {
         FFmpegMp3Player mp3Player = new FFmpegMp3Player();
         mp3Player.raw = raw;
         mp3Player.release();
-        mp3Player.mp3Decoder = new Mp3Decoder();
         mp3Player.pcmChunkPlayer = PcmChunkPlayer.getInstance();
         return mp3Player;
     }
@@ -72,12 +71,15 @@ public class FFmpegMp3Player {
         this.infoListener = playInfoListener;
     }
 
+    /**
+     * Ffmpage 转换耗时
+     */
     long time;
 
     public void prepare(Context context) {
         time = System.currentTimeMillis();
         FFmpegMp3Decoder newMp3Decoder = new FFmpegMp3Decoder(context);
-        newMp3Decoder.mp3ToPcm(new File("sdcard/Record/test.mp3"), cacheFile, new FFmpegMp3Decoder.ResultCallback() {
+        newMp3Decoder.mp3ToPcm(srcFile, cacheFile, new FFmpegMp3Decoder.ResultCallback() {
             @Override
             public void onSuccess() {
                 Logger.i(TAG, "Ffmpage 转换耗时： %s ms", (System.currentTimeMillis() - time));
@@ -92,6 +94,7 @@ public class FFmpegMp3Player {
 
             }
         });
+        initPcmChunkPlayer(false, 16000, 16, 1);
     }
 
     public void play(Context context, final boolean vad) {
@@ -100,25 +103,7 @@ public class FFmpegMp3Player {
             Toast.makeText(context, "正在初始化文件", Toast.LENGTH_LONG).show();
             return;
         }
-        release();
-        mp3Decoder.init(context.getApplicationContext(), raw, new Mp3Decoder.Mp3DecoderListener() {
-            @Override
-            public void onFinish() {
-                pcmChunkPlayer.over();
-                infoListener.onDecodeFinish(cacheFile);
-            }
-
-            @Override
-            public void onPrepare(int sampleRate, int sampleBit, int channelCount) {
-                initPcmChunkPlayer(vad, sampleRate, sampleBit, channelCount);
-            }
-
-            @Override
-            public void onDecodeData(byte[] pcmChunk) {
-                pcmChunkPlayer.putPcmData(pcmChunk, pcmChunk.length);
-                mergerDecodeDataAsync(pcmChunk);
-            }
-        });
+        pcmChunkPlayer.putFileDataAsync(cacheFile);
     }
 
     private void initPcmChunkPlayer(boolean vad, final int sampleRate, int sampleBit, int channelCount) {
@@ -158,9 +143,6 @@ public class FFmpegMp3Player {
         createCacheFile();
         if (pcmChunkPlayer != null) {
             pcmChunkPlayer.release();
-        }
-        if (mp3Decoder != null) {
-            mp3Decoder.release();
         }
     }
 

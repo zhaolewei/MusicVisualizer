@@ -171,7 +171,7 @@ public class AudioView extends View {
         int minus = reversal ? -1 : 1;
 
         if (waveData[i] < 0) {
-            Logger.w("waveData", "waveData[i] < 0 data: %s", waveData[i]);
+            Logger.w("waveData", "waveData[i] < 0 cacheData: %s", waveData[i]);
         }
         float top = (LUMP_MAX_HEIGHT - (LUMP_MIN_HEIGHT + waveData[i] * SCALE) * minus);
 

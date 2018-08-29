@@ -26,10 +26,8 @@ public class Mp3Activity extends AppCompatActivity {
     private Button btPlay, btPlayVad;
     private TextView tvText;
     private ImageView ivSwitch;
-    private long time;
-
     private boolean isFirst = true;
-
+    private long time;
     private FFmpegMp3Player.PlayInfoListener playInfoListener = new FFmpegMp3Player.PlayInfoListener() {
         @Override
         public void onPlayProgress() {
@@ -38,7 +36,9 @@ public class Mp3Activity extends AppCompatActivity {
         @Override
         public void onDecodeFinish(File file) {
             Logger.d(TAG, "onDecodeFinish");
+            time = System.currentTimeMillis();
             audioView.showPcmFileWave(file);
+            Logger.i(TAG, "波形图加载耗时：%s ms", System.currentTimeMillis() - time);
             isFirst = false;
         }
 

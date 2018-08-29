@@ -17,8 +17,9 @@ public class FrequencyScanner {
             return 0;
         }
         /* sampleData + zero padding */
-        DoubleFFT_1D fft = new DoubleFFT_1D(sampleData.length + 24 * sampleData.length);
-        double[] a = new double[(sampleData.length + 24 * sampleData.length) * 2];
+        int len = sampleData.length + 24 * sampleData.length;
+        DoubleFFT_1D fft = new DoubleFFT_1D(len);
+        double[] a = new double[len * 2];
 
         System.arraycopy(applyWindow(sampleData), 0, a, 0, sampleData.length);
         fft.realForward(a);
@@ -36,7 +37,7 @@ public class FrequencyScanner {
             }
         }
 
-        return ((int) maxMag / sampleRate) << 2;
+        return ((int) maxMag / sampleData.length);
     }
 
     /**

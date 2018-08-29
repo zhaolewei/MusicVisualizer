@@ -37,7 +37,7 @@ public class PcmFileWaveView extends View {
      * 数据计算的吞吐量
      * 数据越小，采样值越多，越精确
      */
-    public static final int DEFAULT_FFT_THRUPUT = 16 * 16;
+    public static final int DEFAULT_FFT_THRUPUT = 16 * 64 * 8;
 
     private byte[] waveData;
     private Paint lumpPaint;
@@ -92,7 +92,7 @@ public class PcmFileWaveView extends View {
         try (FileInputStream fis = new FileInputStream(file);
              ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 
-            byte[] b = new byte[1024];
+            byte[] b = new byte[1024 * 4];
             int n;
             while ((n = fis.read(b)) != -1) {
                 bos.write(b, 0, n);

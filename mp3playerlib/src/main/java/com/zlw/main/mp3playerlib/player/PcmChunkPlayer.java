@@ -8,6 +8,8 @@ import com.zlw.main.mp3playerlib.utils.ByteUtils;
 import com.zlw.main.mp3playerlib.utils.FrequencyScanner;
 import com.zlw.main.mp3playerlib.utils.Logger;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
  */
 public class PcmChunkPlayer {
     private static final String TAG = PcmChunkPlayer.class.getSimpleName();
+    private static final String MARK_PCM = ".pcm";
     private static final int DEFAULT_SAMPLE_RATE = 16000;
     private static final int DEFAULT_CHANNEL_COUNT = 1;
 
@@ -99,6 +102,40 @@ public class PcmChunkPlayer {
         player.play();
         pcmChunkPlayerThread = new PcmChunkPlayerThread();
         pcmChunkPlayerThread.start();
+    }
+
+    /**
+     * 播放PCM
+     *
+     * @param pcmFile PCM文件
+     */
+    public void putFileDataAsync(final File pcmFile) {
+        new Thread() {
+            @Override
+            public void run() {
+                if (pcmFile == null || !pcmFile.exists()) {
+                    Logger.e(TAG, "pcmFile is null");
+                    return;
+                }
+
+                if (!pcmFile.getName().endsWith(MARK_PCM)) {
+                    Logger.e(TAG, "这不是一个PCM文件");
+                    return;
+                }
+
+                int bufferSize = 2048;
+                try (FileInputStream dis = new FileInputStream(pcmFile)) {
+                    int len = -1;
+                    byte[] data = new byte[bufferSize];
+                    while ((len = dis.read(data)) != -1) {
+                        putPcmData(data, len);
+                    }
+                    over();
+                } catch (Exception e) {
+                    Logger.e(e, TAG, e.getMessage());
+                }
+            }
+        }.start();
     }
 
     public void putPcmData(byte[] chunk, int size) {

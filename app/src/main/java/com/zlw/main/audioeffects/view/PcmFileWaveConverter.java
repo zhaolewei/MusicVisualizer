@@ -5,13 +5,15 @@ import com.zlw.main.mp3playerlib.utils.FrequencyScanner;
 
 public class PcmFileWaveConverter {
 
-    FrequencyScanner fftScanner;
+    private FrequencyScanner fftScanner;
+    short[] cacheData;
 
     private int fftThruput;
 
     public PcmFileWaveConverter(int fftThruput) {
         this.fftThruput = fftThruput;
         fftScanner = new FrequencyScanner();
+        cacheData = new short[fftThruput];
     }
 
     /**
@@ -24,17 +26,15 @@ public class PcmFileWaveConverter {
 
     private byte[] fft(short[] sampleData) {
         byte[] result = new byte[sampleData.length / fftThruput];
-        short[] data = new short[fftThruput];
-
         for (int i = 0; i < sampleData.length; i = i + fftThruput) {
             int end = i + fftThruput;
             if (end > sampleData.length) {
                 break;
             }
             for (int j = i; j < end; j++) {
-                data[j % fftThruput] = sampleData[j];
+                cacheData[j % fftThruput] = sampleData[j];
             }
-            double extractFrequency = new FrequencyScanner().getMaxFrequency(data, 16000);
+            double extractFrequency = fftScanner.getMaxFrequency(cacheData, 16000);
             result[i / fftThruput] = (byte) (extractFrequency > 127 ? 127 : extractFrequency);
         }
 

@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
  * Mp3播放器
  *
  * @author zhaolewei on 2018/8/24.
+ * @deprecated 请使用FFmpegMp3Player，原因：Android系统自带的解码器太慢，
+ * 测试： 5分钟的mp3音乐使用MediaCodec解码需要1min,使用FFmpeg则需要2s
  */
 public class Mp3Player {
     private static Mp3Player instance;
