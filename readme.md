@@ -4,12 +4,12 @@
 
 1. 播放中的音频可视化
 
-      ![image](http://github.com/zhaolewei/MusicVisualizer/raw/master/doc_raw/voice_view.jpg)
+      ![image](https://github.com/zhaolewei/MusicVisualizer/blob/master/doc_raw/voice_view.jpg)
       
       
 2. 音频文件的音频可视化
       
-      ![image](http://github.com/zhaolewei/MusicVisualizer/raw/master/doc_raw/file_view.jpg)
+      ![image](https://github.com/zhaolewei/MusicVisualizer/blob/master/doc_raw/file_view.jpg)
 
 
 ### 博客地址：
