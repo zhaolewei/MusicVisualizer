@@ -37,7 +37,7 @@ public class FrequencyScanner {
             }
         }
 
-        return ((int) maxMag / sampleData.length);
+        return ((int) maxMag / 16000 << 2);
     }
 
     /**
